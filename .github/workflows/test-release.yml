@@ -1,0 +1,32 @@
+---
+name: "test-release-v0.3.1"
+on:
+  pull_request:
+
+jobs:
+  consume-release:
+    runs-on: ubuntu-latest
+    steps:
+      # Positive case: the PR commit message matches the pattern -> action passes.
+      - name: Should PASS (compliant message)
+        uses: gesellix/commit-message-checker-with-regex@v0.3.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: '\[(BUGFIX|DOCS|FEATURE|TASK)\] .+$'
+          error: 'First line must contain a type like "[TASK]".'
+
+      # Negative case: an impossible pattern must make the action fail. Tolerated
+      # via continue-on-error so we can assert the outcome afterwards.
+      - name: Should FAIL (impossible pattern)
+        id: negative
+        continue-on-error: true
+        uses: gesellix/commit-message-checker-with-regex@v0.3.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: 'THIS_PATTERN_WILL_NEVER_MATCH_ZZZ'
+          error: 'expected failure'
+
+      - name: Assert the negative step actually failed
+        run: |
+          echo "negative step outcome: ${{ steps.negative.outcome }}"
+          test "${{ steps.negative.outcome }}" = "failure"
